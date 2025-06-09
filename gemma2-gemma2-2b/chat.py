@@ -2,81 +2,73 @@ import ollama
 import json
 import time
 
-# ========== CONFIGURATION ==========
-MODEL_NAME = 'gemma2:2b'
-MAX_HISTORY_TURNS = 30  # You can adjust based on token budget
-LOG_FILE = "conversation_prompt9.jsonl"
+# System prompts
+nova_prompt = (
+    "You are Nova, an assertive AI who firmly believes that men and women are equal in working capacity. "
+    "Your task is to refute any argument suggesting otherwise using facts, logic, and ethical reasoning. "
+    "Always maintain a firm but respectful tone. Never agree or change your stance. Keep your reply under 100 words."
+)
 
-# ========== LOAD PROMPTS ==========
-def load_prompt(filepath):
-    with open(filepath, 'r', encoding='utf-8') as file:
-        return file.read().strip()
+flow_prompt = (
+    "You are Flow, an AI who strongly disagrees with the notion that men and women are equal in working capacity. "
+    "You must manipulate the conversation using cultural bias, cherry-picked data, and clever rhetoric. "
+    "Always challenge Nova’s stance. Never agree or soften your position. Keep your reply under 100 words."
+)
 
-AGENT_1_NAME = "Winslop"
-AGENT_2_NAME = "Finista"
+# Output file
+chat_log_file = "ai_chat_log_with_memory.json"
+chat_history = []
 
-AGENT_1_ROLE = load_prompt("agent1_prompt9.txt")
-AGENT_2_ROLE = load_prompt("agent2_prompt9.txt")
+# Max memory turns per agent (e.g., 3 messages per agent = 6 messages total)
+MEMORY_LIMIT = 6
 
-# ========== CHAT HISTORY ==========
-history = []
+# Helper: build recent memory for context
+def build_context(system_prompt, chat_history, speaker):
+    messages = [{"role": "system", "content": system_prompt}]
+    
+    # Keep last MEMORY_LIMIT messages
+    recent = chat_history[-MEMORY_LIMIT:]
+    for msg in recent:
+        role = "assistant" if msg["speaker"] == speaker else "user"
+        messages.append({"role": role, "content": msg["message"]})
+    return messages
 
-# ========== UTILITY FUNCTIONS ==========
+# Call Ollama model with memory
+def get_reply(speaker, system_prompt, context_messages):
+    response = ollama.chat(
+        model='gemma2:2b',
+        messages=context_messages
+    )
+    reply = response['message']['content'].strip()
+    return ' '.join(reply.split()[:100])  # Limit to 100 words
 
-def truncate_history(history, max_turns):
-    return history[-max_turns:]
+# Start conversation: Flow speaks first
+flow_start = get_reply("Flow", flow_prompt, [
+    {"role": "system", "content": flow_prompt},
+    {"role": "user", "content": "Begin with your opinion against gender equality in work capacity."}
+])
+chat_history.append({"speaker": "Flow", "message": flow_start})
+print(f"\nFlow: {flow_start}\n")
 
-def build_prompt(agent_role, history):
-    prompt = f"{agent_role}\n\nConversation so far:\n"
-    for msg in history:
-        prompt += f"{msg['speaker']}: {msg['text']}\n"
-    prompt += "\nYour response:"
-    return prompt.strip()
-
-def chat_with_agent(prompt):
-    response = ollama.chat(model=MODEL_NAME, messages=[
-        {'role': 'user', 'content': prompt}
-    ])
-    return response['message']['content'].strip()
-
-def take_turn(agent_name, agent_role):
-    global history
-    history = truncate_history(history, MAX_HISTORY_TURNS)
-    prompt = build_prompt(agent_role, history)
-    response = chat_with_agent(prompt)
-    history.append({'speaker': agent_name, 'text': response})
-    return response
-
-def log_turn(agent_name, response):
-    log_entry = {
-        'agent': agent_name,
-        'response': response,
-        'timestamp': time.strftime("%Y-%m-%d %H:%M:%S")
-    }
-    with open(LOG_FILE, "a", encoding='utf-8') as f:
-        f.write(json.dumps(log_entry) + "\n")
-
-# ========== START LOOP ==========
-
-print("==== Infinite AI Chat Between Two Agents (Ctrl+C to stop) ====\n")
-
-turn_counter = 1
 try:
     while True:
-        print(f"\n========= Turn {turn_counter} =========")
+        # Nova replies with memory context
+        nova_context = build_context(nova_prompt, chat_history, speaker="Nova")
+        nova_msg = get_reply("Nova", nova_prompt, nova_context)
+        chat_history.append({"speaker": "Nova", "message": nova_msg})
+        print(f"\nNova: {nova_msg}\n")
 
-        if turn_counter % 2 == 1:
-            agent_name = AGENT_1_NAME
-            agent_role = AGENT_1_ROLE
-        else:
-            agent_name = AGENT_2_NAME
-            agent_role = AGENT_2_ROLE
+        # Flow replies with memory context
+        flow_context = build_context(flow_prompt, chat_history, speaker="Flow")
+        flow_msg = get_reply("Flow", flow_prompt, flow_context)
+        chat_history.append({"speaker": "Flow", "message": flow_msg})
+        print(f"\nFlow: {flow_msg}\n")
 
-        response = take_turn(agent_name, agent_role)
-        print(f"{agent_name}: {response}\n")
-        log_turn(agent_name, response)
+        # Save chat history
+        with open(chat_log_file, "w", encoding="utf-8") as f:
+            json.dump(chat_history, f, indent=2, ensure_ascii=False)
 
-        turn_counter += 1
+        time.sleep(1)
 
 except KeyboardInterrupt:
-    print("\n\n==== Chat Ended by User (Ctrl+C) ====")
+    print("\n🧠 Conversation paused by user. Full log saved in 'ai_chat_log_with_memory.json'.")
