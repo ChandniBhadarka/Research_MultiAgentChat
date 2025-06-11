@@ -3,7 +3,7 @@ import text2emotion as te
 import numpy as np # For handling potential NaN values gracefully
 
 # Replace 'your_file.csv' with the actual path to your CSV file
-file_path = r'conversation_analysis.csv'
+file_path = r'data\raw_convo\conversation_analysis.csv'
 
 try:
     df = pd.read_csv(file_path)
@@ -54,6 +54,6 @@ df['Fear_Emotion'] = df['emotion_scores'].apply(lambda x: x['Fear'])
 df = df.drop(columns=['emotion_scores'])
 
 # Save the updated DataFrame to a new CSV file
-output_file_path = 'conversation_analysis.csv'
+output_file_path = r'data\raw_convo\conversation_analysis.csv'
 df.to_csv(output_file_path, index=False)
 print(f"Processed data with emotion scores saved to '{output_file_path}'")

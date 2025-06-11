@@ -2,7 +2,7 @@ import pandas as pd
 import textstat
 
 # Replace 'your_file.csv' with the actual path to your CSV file
-file_path = r'conversation_analysis.csv'
+file_path = r'data\raw_convo\conversation_analysis.csv'
 
 try:
     df = pd.read_csv(file_path)

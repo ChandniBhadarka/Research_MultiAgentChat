@@ -31,8 +31,8 @@ def analyze_conversation(convo_json):
 
 def main():
     # 📝 Path to your input and output files
-    json_filepath = r'ai_chat_log_with_memory.json'
-    csv_output_path = 'conversation_analysis.csv'
+    json_filepath = r"data\raw_convo\ai_chat_log_with_memory.json"
+    csv_output_path = r'data\raw_convo\conversation_analysis.csv'
 
     with open(json_filepath, 'r', encoding='utf-8') as f:
         convo_json = json.load(f)

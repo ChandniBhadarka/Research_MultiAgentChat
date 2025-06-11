@@ -5,7 +5,7 @@ from nltk.tag import pos_tag # Still needed internally for chunking
 from nltk.chunk import RegexpParser
 
 # --- Configuration ---
-file_path = r'conversation_analysis.csv' # CHANGE THIS to your CSV file path
+file_path = r'data\raw_convo\conversation_analysis.csv' # CHANGE THIS to your CSV file path
 output_nltk_file_path = file_path # This will overwrite the original file with new columns
 
 # --- NLTK Functions ---
