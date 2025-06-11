@@ -16,7 +16,7 @@ flow_prompt = (
 )
 
 # Output file
-chat_log_file = "ai_chat_log_with_memory.json"
+chat_log_file = r"data\raw_convo\ai_chat_log_with_memory.json"
 chat_history = []
 
 # Max memory turns per agent (e.g., 3 messages per agent = 6 messages total)
